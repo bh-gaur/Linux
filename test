@@ -12,5 +12,5 @@ touch = create empty file and update timestamp
 
 sudo dhclient -v = get ip when network is change
 
-hello bhola
+
 
