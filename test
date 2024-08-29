@@ -12,5 +12,66 @@ touch = create empty file and update timestamp
 
 sudo dhclient -v = get ip when network is change
 
-
-
+tree
+ls
+ifconfig 
+sudo dhclient -v
+sudo netstat -plunt
+curl ipinfo.io
+ip addr
+touch <file-name>
+vim <file-name>
+rm -rf <file/directory-name>
+cd <directory-name>
+sudo apt update
+sudo apt upgrade
+sudo apt install <package-name>
+sudo apt remove <package-name>
+sudo dpkg -i <file-name>.deb
+chmod 666  <file/directory-name>
+sudo adduser <username>
+sudo addgroup <group-name>
+pwd
+cp
+mv
+ssh
+scp
+sudo systemctl status <service-name>
+sudo systemctl stop <service-name>
+sudo systemctl start <service-name>
+sudo systemctl restart <service-name>
+free -h
+df -h
+grep
+du -sh *
+script
+ps
+top
+su
+passwd
+chown <user> <file/dir-name>
+chgrp <grp-name> <file/dir-name>
+hostname
+cat /etc/os-release
+uname
+finger
+who
+whoami
+pinky
+w
+last
+sudo reboot
+head
+tail
+less
+more
+nc -vz
+sed
+awk
+cut
+echo
+alias
+zip/gzip/tar/bzip
+kill
+which
+ping
