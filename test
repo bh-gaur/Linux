@@ -12,6 +12,8 @@ touch = create empty file and update timestamp
 
 sudo dhclient -v = get ip when network is change
 
+sudo apt-cache policy <package_name>
+
 tree
 ls
 ifconfig 
