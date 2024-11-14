@@ -6,6 +6,7 @@ cat = read, create and write in file
 
 history = list previous running commands
 
+
 touch = create empty file and update timestamp
 
 sudo dhclient -v = get ip when network is change
@@ -31,6 +32,7 @@ sudo dpkg -i <file-name>.deb
 chmod 666  <file/directory-name>
 sudo adduser <username>
 sudo addgroup <group-name>
+python3 -m http.server
 pwd
 cp
 mv
