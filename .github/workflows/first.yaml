@@ -23,4 +23,5 @@ jobs:
       - name: Run command
         run: |
             echo "${{ env.MY_COMMAND }}" >> command
+            cat command
             ls -la
