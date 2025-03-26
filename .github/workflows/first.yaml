@@ -21,7 +21,7 @@ jobs:
       Greeting: Hello
     steps:
       - name: "Say Hello Mona it's Monday"
-        if: ${{ env.MY_COMMAND }} == 'ls'
+        if: ${{ env.MY_COMMAND }} == 'ld'
         run: echo "$Greeting $First_Name. Today is $DAY_OF_WEEK!"
         env:
           First_Name: Mona
