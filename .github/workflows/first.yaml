@@ -2,9 +2,9 @@ name: Test
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - 'main'
+#   push:
+#     branches:
+#       - 'main'
   #   paths:
   #     - 'aws-cloud/ec2/*'
   # pull_request:
