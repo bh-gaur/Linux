@@ -1,4 +1,4 @@
-name: EC2 Instance
+name: Test variable
 
 on:
   workflow_dispatch:
@@ -23,5 +23,6 @@ jobs:
       - name: Run command
         run: |
             echo "${{ env.MY_COMMAND }}" >> command
+            echo "${{ env.MY_COMMAND }}" >> $GITHUB_ENV
             cat command
             ls -la
