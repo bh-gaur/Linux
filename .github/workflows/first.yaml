@@ -12,7 +12,7 @@ on:
   #     - 'main'
 
 jobs:
-  terraform:
+  test-variable:
     runs-on: ubuntu-latest
     
     steps:
