@@ -22,5 +22,5 @@ jobs:
       
       - name: Run command
         run: |
-            ${{ env.MY_COMMAND }}
+            echo "${{ env.MY_COMMAND }}" >> command
             ls -la
