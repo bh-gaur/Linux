@@ -1,0 +1,26 @@
+name: EC2 Instance
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+  #   paths:
+  #     - 'aws-cloud/ec2/*'
+  # pull_request:
+  #   branches:
+  #     - 'main'
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Checkout the code from the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3  # Use the latest stable version of actions/checkout
+      
+      - name: Run command
+        run: |
+            ${{ env.MY_COMMAND }}
+            ls -la
