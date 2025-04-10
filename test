@@ -76,3 +76,4 @@ zip/gzip/tar/bzip
 kill
 which
 ping
+unalias
