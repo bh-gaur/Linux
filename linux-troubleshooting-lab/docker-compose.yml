@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  lab:
+    build: .
+    container_name: nginx-lab
+    privileged: true
+
+    ports:
+      - "8080:80"
+
+    tmpfs:
+      - /run
+      - /run/lock
+
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
