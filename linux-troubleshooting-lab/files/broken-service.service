@@ -1,8 +1,0 @@
-[Unit]
-Description=Lab Service
-
-[Service]
-ExecStart=/usr/bin/sleep infinity
-
-[Install]
-WantedBy=multi-user.target
