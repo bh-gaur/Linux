@@ -1,0 +1,36 @@
+multitenancy_enabled: false
+
+server:
+  http_listen_port: 9009
+
+common:
+  storage:
+    backend: filesystem
+    filesystem:
+      dir: /tmp/mimir
+
+blocks_storage:
+  backend: filesystem
+  filesystem:
+    dir: /tmp/mimir/blocks
+
+ruler_storage:
+  backend: filesystem
+  filesystem:
+    dir: /tmp/mimir/rules
+
+alertmanager_storage:
+  backend: filesystem
+  filesystem:
+    dir: /tmp/mimir/alertmanager
+
+limits:
+  max_label_names_per_series: 30
+  max_global_exemplars_per_user: 100000
+
+memberlist:
+  join_members: []
+
+ingester:
+  ring:
+    replication_factor: 1

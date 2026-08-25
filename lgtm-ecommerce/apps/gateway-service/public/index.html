@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Commerce Observability Storefront</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #080710;
+      --bg-card: rgba(255, 255, 255, 0.05);
+      --bg-card-hover: rgba(255, 255, 255, 0.08);
+      --primary: #9d4edd;
+      --primary-glow: rgba(157, 78, 221, 0.4);
+      --secondary: #2ec4b6;
+      --secondary-glow: rgba(46, 196, 182, 0.4);
+      --accent: #ff007f;
+      --text-main: #f8f9fa;
+      --text-muted: #adb5bd;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-color-glow: rgba(157, 78, 221, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(157, 78, 221, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(46, 196, 182, 0.08) 0%, transparent 45%);
+    }
+
+    header {
+      backdrop-filter: blur(12px);
+      background-color: rgba(8, 7, 16, 0.7);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 1.25rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      width: 2.25rem;
+      height: 2.25rem;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #ffffff, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-text span {
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .user-panel {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    select, input, button {
+      font-family: inherit;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: 0.5rem;
+      outline: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    select {
+      padding: 0.6rem 2.25rem 0.6rem 1rem;
+      appearance: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f8f9fa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1rem;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--border-color-glow);
+    }
+
+    .btn {
+      padding: 0.6rem 1.25rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), #7b2cbf);
+      border: none;
+      box-shadow: 0 4px 15px var(--primary-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(157, 78, 221, 0.6);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--text-muted);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title::after {
+      content: '';
+      flex-grow: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--border-color), transparent);
+      margin-left: 1rem;
+    }
+
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .product-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .product-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-color-glow);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .product-card:hover::before {
+      opacity: 1;
+    }
+
+    .product-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .product-desc {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+      margin-bottom: 1.25rem;
+      flex-grow: 1;
+    }
+
+    .product-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .product-price {
+      font-size: 1.5rem;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--secondary);
+    }
+
+    .cart-panel {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      height: fit-content;
+      max-height: calc(100vh - 8rem);
+      position: sticky;
+      top: 6rem;
+    }
+
+    .cart-items {
+      overflow-y: auto;
+      margin-bottom: 1.5rem;
+      flex-grow: 1;
+      max-height: 300px;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .cart-item-info {
+      flex-grow: 1;
+    }
+
+    .cart-item-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .cart-item-price {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 0.2rem;
+    }
+
+    .cart-item-qty {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.85rem;
+    }
+
+    .cart-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-top: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .cart-total-label {
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .cart-total-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--secondary);
+    }
+
+    .empty-cart-msg {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 2rem 0;
+      font-style: italic;
+    }
+
+    .trace-console {
+      grid-column: 1 / -1;
+      background: #0d0c18;
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .console-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .console-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .console-log {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.85rem;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      line-height: 1.5;
+    }
+
+    .console-line {
+      margin-bottom: 0.5rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    .line-time {
+      color: #6c757d;
+      flex-shrink: 0;
+    }
+
+    .line-msg {
+      word-break: break-all;
+    }
+
+    .line-msg span.accent {
+      color: var(--secondary);
+    }
+
+    .line-msg a.trace-link {
+      color: var(--primary);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    /* Modal / Popups */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(8, 7, 16, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-card {
+      background: #0f0e1c;
+      border: 1px solid var(--primary);
+      box-shadow: 0 0 30px var(--primary-glow);
+      border-radius: 1.5rem;
+      width: 90%;
+      max-width: 500px;
+      padding: 2rem;
+      text-align: center;
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-icon {
+      width: 4rem;
+      height: 4rem;
+      background: rgba(46, 196, 182, 0.1);
+      border: 2px solid var(--secondary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2rem;
+      color: var(--secondary);
+      box-shadow: 0 0 20px var(--secondary-glow);
+    }
+
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-body {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+
+    .trace-display-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+      word-break: break-all;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .trace-box-title {
+      color: var(--primary);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .tier-badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 2rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .tier-gold {
+      background: rgba(255, 215, 0, 0.15);
+      color: gold;
+      border: 1px solid gold;
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+    }
+
+    .tier-regular {
+      background: rgba(46, 196, 182, 0.15);
+      color: var(--secondary);
+      border: 1px solid var(--secondary);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon">E</div>
+      <div class="logo-text">Telemetry<span>Store</span></div>
+    </div>
+
+    <div class="user-panel">
+      <div>
+        <span id="user-tier-badge" class="tier-badge tier-regular">Regular Tier</span>
+      </div>
+      <select id="user-select">
+        <option value="Guest">Guest User (Regular)</option>
+        <option value="Alice">Alice (Gold Tier - Baggage Active)</option>
+        <option value="Bob">Bob (Gold Tier - Baggage Active)</option>
+      </select>
+      <button class="btn btn-secondary" id="login-btn">Sync Context</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div>
+      <h2 class="section-title">Product Catalog</h2>
+      <div class="catalog-grid" id="catalog-container">
+        <!-- Products load here dynamically -->
+        <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">Loading telemetry catalog items...</div>
+      </div>
+    </div>
+
+    <div class="cart-panel">
+      <h3 class="section-title" style="font-size: 1.35rem; margin-bottom: 1rem;">My Cart</h3>
+      <div class="cart-items" id="cart-container">
+        <div class="empty-cart-msg">Your cart is empty. Click catalog items to fill it!</div>
+      </div>
+      <div class="cart-total">
+        <span class="cart-total-label">Total Amount:</span>
+        <span class="cart-total-value" id="cart-total-val">$0.00</span>
+      </div>
+      <button class="btn btn-primary" id="checkout-btn" style="justify-content: center; width: 100%;" disabled>
+        Proceed to Checkout
+      </button>
+    </div>
+
+    <div class="trace-console">
+      <div class="console-header">
+        <h4 class="console-title">⚡ Distributed Tracing Operations Console</h4>
+        <button class="btn btn-secondary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;" id="clear-console-btn">Clear logs</button>
+      </div>
+      <div class="console-log" id="console-logs">
+        <div class="console-line">
+          <span class="line-time">[SYSTEM]</span>
+          <span class="line-msg">Console operational. Ready to capture OpenTelemetry spans and trace events.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="modal-overlay" id="success-modal">
+    <div class="modal-card">
+      <div class="modal-icon">✓</div>
+      <h3 class="modal-title">Checkout Successful!</h3>
+      <div class="modal-body">
+        <p style="margin-bottom: 1.25rem;">Your order was processed successfully across the microservices mesh.</p>
+        <div class="trace-display-box">
+          <span class="trace-box-title">Active Trace ID</span>
+          <span id="modal-trace-id">00000000000000000000000000000000</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          Click below to load this specific distributed trace inside the Grafana Tempo search explorer.
+        </p>
+      </div>
+      <div style="display: flex; gap: 1rem; justify-content: center;">
+        <button class="btn btn-secondary" id="close-modal-btn">Dismiss</button>
+        <a id="grafana-trace-btn" target="_blank" class="btn btn-primary" style="text-decoration: none;">
+          🔍 View Trace in Grafana
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = "lgtm-secret-key";
+    let currentUser = "Guest";
+    let currentToken = "Bearer token-for-Guest";
+    let cart = [];
+
+    // Elements
+    const userSelect = document.getElementById('user-select');
+    const loginBtn = document.getElementById('login-btn');
+    const userTierBadge = document.getElementById('user-tier-badge');
+    const catalogContainer = document.getElementById('catalog-container');
+    const cartContainer = document.getElementById('cart-container');
+    const cartTotalVal = document.getElementById('cart-total-val');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const consoleLogs = document.getElementById('console-logs');
+    const clearConsoleBtn = document.getElementById('clear-console-btn');
+    const successModal = document.getElementById('success-modal');
+    const modalTraceId = document.getElementById('modal-trace-id');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const grafanaTraceBtn = document.getElementById('grafana-trace-btn');
+
+    // Helper: Logging to Console
+    function logToConsole(message, type = "INFO") {
+      const now = new Date().toLocaleTimeString();
+      const line = document.createElement('div');
+      line.className = 'console-line';
+      line.innerHTML = `
+        <span class="line-time">[${now}] [${type}]</span>
+        <span class="line-msg">${message}</span>
+      `;
+      consoleLogs.appendChild(line);
+      consoleLogs.scrollTop = consoleLogs.scrollHeight;
+    }
+
+    // Auth sync simulation
+    async function syncAuth() {
+      const user = userSelect.value;
+      logToConsole(`Authenticating user '${user}' via downstream Auth-Service...`);
+      
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': API_KEY
+          },
+          body: JSON.stringify({ username: user, password: 'password123' })
+        });
+        
+        if (!response.ok) throw new Error("Auth request failed");
+        
+        const data = await response.json();
+        currentUser = user;
+        currentToken = data.token;
+        
+        // Update UI
+        if (["Alice", "Bob"].includes(user)) {
+          userTierBadge.textContent = "Gold Tier (Baggage Active)";
+          userTierBadge.className = "tier-badge tier-gold";
+          logToConsole(`User context synchronized: <span class="accent">${user}</span> is authenticated as <span class="accent">Gold Tier</span>. Baggage headers ('customer.tier=gold') will propagate to Tempo.`, "AUTH");
+        } else {
+          userTierBadge.textContent = "Regular Tier";
+          userTierBadge.className = "tier-badge tier-regular";
+          logToConsole(`User context synchronized: Guest authenticated. Regular tier processing assigned.`, "AUTH");
+        }
+        
+        // Refresh cart for this user
+        fetchCart();
+      } catch (err) {
+        logToConsole(`Failed to sync authentication: ${err.message}`, "ERROR");
+      }
+    }
+
+    // Fetch Catalog
+    async function fetchCatalog() {
+      try {
+        logToConsole("Requesting product catalog list from Catalog-Service...");
+        const response = await fetch('/catalog', {
+          headers: { 'X-API-Key': API_KEY }
+        });
+        
+        if (!response.ok) throw new Error("Catalog fetch failed");
+        
+        const products = await response.json();
+        catalogContainer.innerHTML = '';
+        
+        products.forEach(p => {
+          const card = document.createElement('div');
+          card.className = 'product-card';
+          card.innerHTML = `
+            <div>
+              <div class="product-name">${p.name}</div>
+              <div class="product-desc">${p.description}</div>
+            </div>
+            <div class="product-meta">
+              <div class="product-price">$${p.price.toFixed(2)}</div>
+              <button class="btn btn-secondary btn-sm" onclick="addToCart(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.price})">
+                + Add
+              </button>
+            </div>
+          `;
+          catalogContainer.appendChild(card);
+        });
+        logToConsole(`Successfully loaded ${products.length} products from Catalog-Service.`, "SUCCESS");
+      } catch (err) {
+        catalogContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--accent); padding: 3rem;">Failed to load catalog: ${err.message}</div>`;
+        logToConsole(`Failed to load catalog: ${err.message}`, "ERROR");
+      }
+    }
+
+    // Fetch Cart
+    async function fetchCart() {
+      const userId = currentUser === "Guest" ? "guest_user" : `user_${currentUser.toLowerCase()}`;
+      try {
+        const response = await fetch(`/cart/${userId}`, {
+          headers: { 'X-API-Key': API_KEY }
+        });
+        if (!response.ok) throw new Error("Cart fetch failed");
+        
+        const data = await response.json();
+        cart = data.items || [];
+        renderCart();
+      } catch (err) {
+        logToConsole(`Failed to retrieve cart: ${err.message}`, "ERROR");
+      }
+    }
+
+    // Render Cart items
+    function renderCart() {
+      cartContainer.innerHTML = '';
+      if (cart.length === 0) {
+        cartContainer.innerHTML = '<div class="empty-cart-msg">Your cart is empty. Click catalog items to fill it!</div>';
+        cartTotalVal.textContent = '$0.00';
+        checkoutBtn.disabled = true;
+        return;
+      }
+
+      let total = 0;
+      cart.forEach(item => {
+        total += item.price * item.quantity;
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.innerHTML = `
+          <div class="cart-item-info">
+            <div class="cart-item-name">${item.name}</div>
+            <div class="cart-item-price">$${item.price.toFixed(2)}</div>
+          </div>
+          <div class="cart-item-qty">x${item.quantity}</div>
+        `;
+        cartContainer.appendChild(div);
+      });
+
+      cartTotalVal.textContent = `$${total.toFixed(2)}`;
+      checkoutBtn.disabled = false;
+    }
+
+    // Add to Cart handler
+    async function addToCart(id, name, price) {
+      logToConsole(`Adding product '${name}' (ID: ${id}) to cart...`);
+      const userId = currentUser === "Guest" ? "guest_user" : `user_${currentUser.toLowerCase()}`;
+      
+      const existing = cart.find(i => i.item_id === id);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ item_id: id, name, price, quantity: 1 });
+      }
+
+      renderCart();
+
+      // Sync to redis via Cart-Service
+      try {
+        await fetch(`/cart/${userId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': API_KEY
+          },
+          body: JSON.stringify({ items: cart })
+        });
+      } catch (err) {
+        logToConsole(`Failed to save cart to server: ${err.message}`, "ERROR");
+      }
+    }
+
+    // Trigger Checkout
+    async function triggerCheckout() {
+      if (cart.length === 0) return;
+      
+      logToConsole("Initiating transaction flow. Generating distributed checkout span context...");
+      checkoutBtn.disabled = true;
+      checkoutBtn.textContent = "Processing Transaction...";
+      
+      const userId = currentUser === "Guest" ? "guest_user" : `user_${currentUser.toLowerCase()}`;
+      const firstItem = cart[0]; // Checkout first item in list for simplification
+      
+      try {
+        const response = await fetch('/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': currentToken,
+            'X-API-Key': API_KEY
+          },
+          body: JSON.stringify({
+            item_id: firstItem.item_id,
+            quantity: firstItem.quantity
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || "Transaction checkout failed");
+        }
+
+        const data = await response.json();
+        
+        logToConsole(`Checkout transaction completed. Distributed trace created successfully. Trace ID: <span class="accent">${data.trace_id}</span>`, "SUCCESS");
+        
+        // Show success modal with direct Grafana Trace link
+        modalTraceId.textContent = data.trace_id;
+        
+        // Direct Tempo Explorer deep link url
+        const exploreUrl = `http://localhost:3001/explore?left=%5B%22now-1h%22%2C%22now%22%2C%22Tempo%22%2C%7B%22query%22%3A%22${data.trace_id}%22%7D%5D`;
+        grafanaTraceBtn.href = exploreUrl;
+        successModal.classList.add('active');
+
+        // Clear cart
+        cart = [];
+        renderCart();
+        await fetch(`/cart/${userId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': API_KEY
+          },
+          body: JSON.stringify({ items: [] })
+        });
+        
+      } catch (err) {
+        logToConsole(`Transaction checkout failed: ${err.message}`, "ERROR");
+        alert(`Checkout failed: ${err.message}`);
+      } finally {
+        checkoutBtn.textContent = "Proceed to Checkout";
+        checkoutBtn.disabled = cart.length === 0;
+      }
+    }
+
+    // Initial load setup
+    loginBtn.addEventListener('click', syncAuth);
+    checkoutBtn.addEventListener('click', triggerCheckout);
+    clearConsoleBtn.addEventListener('click', () => {
+      consoleLogs.innerHTML = '';
+      logToConsole("Console cleared. Spans listener listening.");
+    });
+    closeModalBtn.addEventListener('click', () => {
+      successModal.classList.remove('active');
+    });
+
+    // Start
+    fetchCatalog();
+    syncAuth();
+  </script>
+</body>
+</html>

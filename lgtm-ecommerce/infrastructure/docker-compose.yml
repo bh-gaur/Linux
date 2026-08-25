@@ -1,0 +1,541 @@
+version: '3.8'
+
+networks:
+  lgtm:
+    driver: bridge
+
+services:
+  # ==========================================
+  # DATABASE & MESSAGE BROKER SYSTEM
+  # ==========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: lgtm-postgres-v2
+    environment:
+      - POSTGRES_DB=lgtmdb
+      - POSTGRES_USER=lgtm_user
+      - POSTGRES_PASSWORD=lgtm_password
+    ports:
+      - "5433:5432"
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lgtm_user -d lgtmdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: lgtm-redis-v2
+    ports:
+      - "6380:6379"
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: lgtm-zookeeper-v2
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "echo stat | nc localhost 2181"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: lgtm-kafka-v2
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9093:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: lgtm-kafka-setup
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ "kafka-topics", "--bootstrap-server", "kafka:9092", "--create", "--if-not-exists", "--topic", "order-events", "--partitions", "3", "--replication-factor", "1" ]
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ==========================================
+  # OBSERVABILITY STACK
+  # ==========================================
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: lgtm-loki-v2
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./loki:/etc/loki
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 3100"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  mimir:
+    image: grafana/mimir:2.10.3
+    container_name: lgtm-mimir-v2
+    command: -config.file=/etc/mimir/mimir-config.yaml
+    volumes:
+      - ./mimir:/etc/mimir
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9009"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: lgtm-tempo-v2
+    command: -config.file=/etc/tempo/tempo-config.yaml -target=all
+    volumes:
+      - ./tempo:/etc/tempo
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 3200"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.95.0
+    container_name: lgtm-otel-collector-v2
+    command: ["--config=/etc/otel-collector/otel-collector-config.yaml"]
+    depends_on:
+      tempo:
+        condition: service_healthy
+      mimir:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    volumes:
+      - ./otel-collector:/etc/otel-collector
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8888:8888" # Prometheus metrics exposed by the collector itself
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: lgtm-grafana-v2
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==========================================
+  # E-COMMERCE APPLICATIONS (10 SERVICES)
+  # ==========================================
+  gateway-service:
+    build:
+      context: ../apps
+      dockerfile: gateway-service/Dockerfile
+    container_name: gateway-service
+    ports:
+      - "8090:8090"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    environment:
+      - PORT=8090
+      - API_KEY=lgtm-secret-key
+      - AUTH_SERVICE_URL=http://auth-service:8091
+      - CATALOG_SERVICE_URL=http://catalog-service:8092
+      - CART_SERVICE_URL=http://cart-service:8093
+      - ORDER_SERVICE_URL=http://order-service:8094
+      - ENABLE_OBSERVABILITY=true
+      - OTEL_SERVICE_NAME=gateway-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8090/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  auth-service:
+    build:
+      context: ../apps
+      dockerfile: auth-service/Dockerfile
+    container_name: auth-service
+    ports:
+      - "8091:8091"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    environment:
+      - PORT=8091
+      - ENABLE_OBSERVABILITY=true
+      - OTEL_SERVICE_NAME=auth-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8091/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  catalog-service:
+    build:
+      context: ../apps
+      dockerfile: catalog-service/Dockerfile
+    container_name: catalog-service
+    ports:
+      - "8092:8092"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    environment:
+      - PORT=8092
+      - OTEL_SERVICE_NAME=catalog-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4318
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8092/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  cart-service:
+    build:
+      context: ../apps
+      dockerfile: cart-service/Dockerfile
+    container_name: cart-service
+    ports:
+      - "8093:8093"
+    depends_on:
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    environment:
+      - PORT=8093
+      - REDIS_HOST=redis
+      - ENABLE_OBSERVABILITY=true
+      - OTEL_SERVICE_NAME=cart-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8093/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  order-service:
+    build:
+      context: ../apps
+      dockerfile: order-service/Dockerfile
+    container_name: order-service
+    ports:
+      - "8094:8094"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    environment:
+      - PORT=8094
+      - DB_HOST=postgres
+      - KAFKA_BROKERS=kafka:9092
+      - CATALOG_SERVICE_URL=http://catalog-service:8092
+      - INVENTORY_SERVICE_URL=http://inventory-service:8095
+      - PAYMENT_SERVICE_URL=http://payment-service:8096
+      - SHIPPING_SERVICE_URL=http://shipping-service:8097
+      - OTEL_SERVICE_NAME=order-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4318
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8094/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  inventory-service:
+    build:
+      context: ../apps
+      dockerfile: inventory-service/Dockerfile
+    container_name: inventory-service
+    ports:
+      - "8095:8095"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    environment:
+      - PORT=8095
+      - DB_HOST=postgres
+      - OTEL_SERVICE_NAME=inventory-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4318
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8095/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  payment-service:
+    build:
+      context: ../apps
+      dockerfile: payment-service/Dockerfile
+    container_name: payment-service
+    ports:
+      - "8096:8096"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    environment:
+      - PORT=8096
+      - ENABLE_OBSERVABILITY=true
+      - OTEL_SERVICE_NAME=payment-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8096/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  shipping-service:
+    build:
+      context: ../apps
+      dockerfile: shipping-service/Dockerfile
+    container_name: shipping-service
+    ports:
+      - "8097:8097"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    environment:
+      - PORT=8097
+      - ENABLE_OBSERVABILITY=true
+      - OTEL_SERVICE_NAME=shipping-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8097/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  notification-service:
+    build:
+      context: ../apps
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
+    ports:
+      - "8098:8098"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    environment:
+      - PORT=8098
+      - KAFKA_BROKERS=kafka:9092
+      - ENABLE_OBSERVABILITY=true
+      - OTEL_SERVICE_NAME=notification-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8098/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  reporting-service:
+    build:
+      context: ../apps
+      dockerfile: reporting-service/Dockerfile
+    container_name: reporting-service
+    ports:
+      - "8099:8099"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    environment:
+      - PORT=8099
+      - DB_HOST=postgres
+      - ENABLE_OBSERVABILITY=true
+      - OTEL_SERVICE_NAME=reporting-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8099/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ==========================================
+  # TRAFFIC SIMULATOR
+  # ==========================================
+  load-generator:
+    build:
+      context: ../apps
+      dockerfile: load-generator/Dockerfile
+    container_name: load-generator
+    depends_on:
+      gateway-service:
+        condition: service_healthy
+    networks:
+      - lgtm
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"

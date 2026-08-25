@@ -1,0 +1,30 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: "LGTM Alerts"
+    folder: "System Alerts"
+    interval: 10s
+    rules:
+      - uid: "api_high_error_rate"
+        title: "High API Error Rate Alerts"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: sum(rate(calculation_requests_total[1m])) > 0.1
+              intervalMs: 10000
+              maxDataPoints: 100
+              refId: A
+        noDataState: OK
+        execErrState: Alerting
+        for: 15s
+        annotations:
+          summary: "Node.js Gateway experiences high API traffic error spikes."
+          description: "Calculation requests error rate exceeds threshold of 10% over the last minute."
+        labels:
+          severity: critical
